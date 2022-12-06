@@ -6,7 +6,14 @@ import random
 
 # Get a list of all words from the file 'EnglishWords.txt'
 with open('EnglishWords.txt') as file:
-    all_words = [line.rstrip() for line in file]
+    all_words = []
+    pangrams = []
+    for line in file:
+        word = line.rstrip()
+        all_words.append(word)
+        if len(set(list(word))) == 7:
+            pangrams.append(word)
+
 
 # Get a list of all valid answers given the list of letters
 def get_words(letters, special_letter):
@@ -98,12 +105,105 @@ def draw_hex_grid(Surface, radius, position, letters, font, font_color):
 def shuffle_letters(letters):
     return letters[0] + ''.join(random.sample(letters[1:], len(letters[1:])))
 
+# Generate random 7 letters
+def gen_letters():
+    the_word = random.choice(pangrams)
+    the_string = ''.join(random.sample(set(list(the_word)), 7))
+    return the_string
+
+# Prompt for getting the letters
+def get_letters(Surface):
+
+    font = pygame.font.SysFont("Calibri", 50, True) 
+    font2 = pygame.font.SysFont("Calibri", 30, True) 
+    font3 = pygame.font.SysFont("Calibri", 20, True) 
+
+    # Create shuffle button
+    shuffle_button = pygame.Rect(425, 75, 50, 50)
+    shuffle_icon = pygame.image.load('shuffle_icon.svg')
+    shuffle_icon = pygame.transform.scale(shuffle_icon, (50,50))
+
+    screen = pygame.display.set_mode([900,400])
+
+    # The current entered letters
+    text = ''
+
+    # Error message if typed letters aren't allowed
+    error_message = ''
+
+    while True:
+
+        # Quit if close button is pressed
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
+
+            # Did the user click the shuffle button?
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                error_message = 'Press enter'
+                mouse_pos = event.pos  # gets mouse position
+
+                # checks if mouse position is over the button
+                if shuffle_button.collidepoint(mouse_pos):
+                    text = gen_letters()
+
+            if event.type == pygame.KEYDOWN:
+
+                # Did the user press Enter?
+                if event.key == pygame.K_RETURN:
+                    if len(text) < 7:
+                        error_message = 'Too few letters'
+                    if len(text) == 7:
+                        return text
+
+                # Did the user press Backspace
+                elif event.key == pygame.K_BACKSPACE:
+                    error_message = ''
+                    text = text[:-1]
+
+                # Did the user press a letter?
+                elif event.unicode.isalpha():
+                    error_message = ''
+                    if event.unicode.lower() in text:
+                        error_message = 'Duplicate letter'
+                    if len(text) == 7:
+                        error_message = 'Press enter'
+                    else:
+                        text += event.unicode.lower()
+                        if len(text) == 7:
+                            error_message = 'Press enter'
+
+        
+        screen.fill((255,255,255))
+
+        # Draw prompt
+        draw_text_center(screen, "Enter 7 letters or randomly generate them", (450,50), font2, (143,143,143))
+
+        # Draw error message
+        draw_text_center(screen, error_message, (450,350), font3, (143,143,143))
+
+        # Draw current typed letters
+        draw_text_center(screen, text.upper(), (450,200), font, (0,0,0))
+
+        # Draw shuffle button
+        pygame.draw.rect(screen, (255,255,255), shuffle_button)
+        screen.blit(shuffle_icon, shuffle_icon.get_rect(center = shuffle_button.center))
+
+        pygame.display.flip()
+
 # Main program
 def main():
 
-    # Specify the letters for today's game in a string 
+    # Run prompt for getting letters
+    letter_gen_screen = pygame.display.set_mode([500,300])
+    letters = get_letters(letter_gen_screen)
+    # Close program if user closed the prompt
+    if not letters:
+        return
+
+    # Specify the letters for the game in a string 
     # The frist character should be the central letter. 
-    the_letters = "airdzyw"
+    the_letters = letters
     special_letter = the_letters[0]
 
     # Creates list of valid answers
